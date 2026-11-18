@@ -1,0 +1,14 @@
+export default function Card({ title, children, variant = "primary" }) {
+  const variantStyles = {
+    primary: "border-blue-500 bg-blue-50 text-blue-900",
+    secondary: "border-gray-500 bg-gray-50 text-gray-900",
+    outlined: "border-gray-300 bg-white text-gray-800 border-2",
+  };
+
+  return (
+    <div className={`p-4 rounded-lg border shadow-sm ${variantStyles[variant] || variantStyles.primary}`}>
+      {title && <h3 className="font-bold text-lg mb-2">{title}</h3>}
+      <div className="card-body">{children}</div>
+    </div>
+  );
+}
