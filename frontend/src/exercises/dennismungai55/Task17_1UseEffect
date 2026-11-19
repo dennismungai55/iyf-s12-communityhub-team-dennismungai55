@@ -1,0 +1,144 @@
+import { useState, useEffect } from 'react';
+
+// Exercise 1: Understanding useEffect
+export function Counter() {
+  const [count, setCount] = useState(0);
+
+  // Runs after every render
+  useEffect(() => {
+    console.log('Effect ran! Count is:', count);
+  });
+
+  // Runs only on mount (empty dependency array)
+  useEffect(() => {
+    console.log('Component mounted!');
+  }, []);
+
+  // Runs when count changes
+  useEffect(() => {
+    console.log('Count changed to:', count);
+    document.title = `Count: ${count}`;
+  }, [count]);
+
+  // Cleanup function (runs on unmount or before re-running)
+  useEffect(() => {
+    const interval = setInterval(() => {
+      console.log('Tick');
+    }, 1000);
+
+    return () => {
+      clearInterval(interval);
+      console.log('Cleaned up!');
+    };
+  }, []);
+
+  return (
+    <div>
+      <p>Count: {count}</p>
+      <button onClick={() => setCount((prev) => prev + 1)}>Increment</button>
+    </div>
+  );
+}
+
+// Exercise 2 - Pattern 1: Fetch data on mount and when userId changes
+export function UserProfile({ userId = 1 }) {
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    let isCancelled = false;
+
+    async function fetchUser() {
+      setLoading(true);
+      setError(null);
+      try {
+        const response = await fetch(`/api/users/${userId}`);
+        if (!response.ok) {
+          throw new Error('Failed to load user');
+        }
+        const data = await response.json();
+        if (!isCancelled) {
+          setUser(data);
+        }
+      } catch (err) {
+        if (!isCancelled) {
+          setError(err.message);
+        }
+      } finally {
+        if (!isCancelled) {
+          setLoading(false);
+        }
+      }
+    }
+
+    fetchUser();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [userId]);
+
+  if (loading) return <p>Loading...</p>;
+  if (error) return <p>Error: {error}</p>;
+  if (!user) return <p>No user found.</p>;
+
+  return <div>{user.name}</div>;
+}
+
+// Exercise 2 - Pattern 2: Event listeners with cleanup
+export function WindowSize() {
+  const [size, setSize] = useState({
+    width: window.innerWidth,
+    height: window.innerHeight,
+  });
+
+  useEffect(() => {
+    const handleResize = () => {
+      setSize({
+        width: window.innerWidth,
+        height: window.innerHeight,
+      });
+    };
+
+    window.addEventListener('resize', handleResize);
+
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  return (
+    <p>
+      Window: {size.width} x {size.height}
+    </p>
+  );
+}
+
+// Exercise 2 - Pattern 3: localStorage sync
+export function ThemeToggle() {
+  const [theme, setTheme] = useState(() => {
+    return localStorage.getItem('theme') || 'light';
+  });
+
+  useEffect(() => {
+    localStorage.setItem('theme', theme);
+    document.body.className = theme;
+  }, [theme]);
+
+  return (
+    <button onClick={() => setTheme((prev) => (prev === 'light' ? 'dark' : 'light'))}>
+      Toggle Theme ({theme})
+    </button>
+  );
+}
+
+export default function Task17_1UseEffect() {
+  return (
+    <div>
+      <h2>Task 17.1: useEffect Hook</h2>
+      <Counter />
+      <WindowSize />
+      <ThemeToggle />
+      <UserProfile userId={1} />
+    </div>
+  );
+}
