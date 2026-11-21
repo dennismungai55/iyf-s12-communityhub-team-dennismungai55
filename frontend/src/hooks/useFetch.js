@@ -1,35 +1,45 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 
 export function useFetch(url) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [retryCount, setRetryCount] = useState(0);
+
+  const refetch = useCallback(() => {
+    setRetryCount((prev) => prev + 1);
+  }, []);
 
   useEffect(() => {
-    if (!url) return;
+    if (!url) {
+      setLoading(false);
+      return;
+    }
 
-    let isCancelled = false;
+    const controller = new AbortController();
 
     async function fetchData() {
       try {
         setLoading(true);
         setError(null);
 
-        const response = await fetch(url);
+        const response = await fetch(url, {
+          signal: controller.signal,
+        });
+
         if (!response.ok) {
-          throw new Error("Fetch failed");
+          throw new Error("Failed to fetch data.");
         }
 
         const json = await response.json();
-        if (!isCancelled) {
-          setData(json);
-        }
+
+        setData(json);
       } catch (err) {
-        if (!isCancelled) {
+        if (err.name !== "AbortError") {
           setError(err.message);
         }
       } finally {
-        if (!isCancelled) {
+        if (!controller.signal.aborted) {
           setLoading(false);
         }
       }
@@ -38,11 +48,11 @@ export function useFetch(url) {
     fetchData();
 
     return () => {
-      isCancelled = true;
+      controller.abort();
     };
-  }, [url]);
+  }, [url, retryCount]);
 
-  return { data, loading, error };
+  return { data, loading, error, refetch };
 }
 
 export default useFetch;
