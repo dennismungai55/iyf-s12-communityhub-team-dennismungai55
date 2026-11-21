@@ -1,0 +1,18 @@
+.card {
+  padding: 20px;
+  margin: 16px 0;
+  background: #fff8e7;
+  border: 1px solid #e6c878;
+  border-radius: 12px;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.08);
+}
+
+.title {
+  color: #704214;
+  margin-bottom: 10px;
+}
+
+.description {
+  color: #555;
+  line-height: 1.6;
+}
