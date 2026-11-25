@@ -2,6 +2,7 @@ const express = require("express");
 const logger = require("./middleware/logger");
 const errorHandler = require("./middleware/errorHandler");
 const routes = require("./routes");
+const authRoutes = require("./routes/auth");
 
 const app = express();
 
@@ -17,6 +18,7 @@ app.get("/", (req, res) => {
 });
 
 // API routes
+app.use("/api/auth", authRoutes);
 app.use("/api", routes);
 
 // 404 handler (after routes, before error handler)
