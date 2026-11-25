@@ -1,99 +1,157 @@
-const store = require("../data/store");
+const Post = require("../models/Post");
 
-const getAllPosts = (req, res) => {
-  const { author, sort } = req.query;
-  let result = [...store.posts];
+const getAllPosts = async (req, res, next) => {
+  try {
+    const { author, search, sort, page = 1, limit = 10 } = req.query;
+    const query = {};
 
-  if (author) {
-    result = result.filter((post) =>
-      post.author.toLowerCase().includes(author.toLowerCase()),
-    );
+    if (author) {
+      query.author = new RegExp(author, "i");
+    }
+
+    if (search) {
+      query.$text = { $search: search };
+    }
+
+    let sortOption = { createdAt: -1 };
+    if (sort === "oldest") {
+      sortOption = { createdAt: 1 };
+    } else if (sort === "popular") {
+      sortOption = { likes: -1 };
+    }
+
+    const pageNum = Math.max(parseInt(page, 10) || 1, 1);
+    const limitNum = Math.max(parseInt(limit, 10) || 10, 1);
+    const skip = (pageNum - 1) * limitNum;
+
+    const [posts, total] = await Promise.all([
+      Post.find(query).sort(sortOption).skip(skip).limit(limitNum),
+      Post.countDocuments(query),
+    ]);
+
+    res.json({
+      posts,
+      pagination: {
+        page: pageNum,
+        limit: limitNum,
+        total,
+        pages: Math.ceil(total / limitNum),
+      },
+    });
+  } catch (error) {
+    next(error);
   }
-
-  if (sort === "newest") {
-    result.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-  } else if (sort === "popular") {
-    result.sort((a, b) => b.likes - a.likes);
-  }
-
-  res.json(result);
 };
 
-const getPostById = (req, res) => {
-  const id = parseInt(req.params.id, 10);
-  const post = store.posts.find((p) => p.id === id);
+const getPostById = async (req, res, next) => {
+  try {
+    const post = await Post.findById(req.params.id);
 
-  if (!post) {
-    return res.status(404).json({ error: "Post not found" });
+    if (!post) {
+      return res.status(404).json({ error: "Post not found" });
+    }
+
+    res.json(post);
+  } catch (error) {
+    if (error.name === "CastError") {
+      return res.status(400).json({ error: "Invalid post ID" });
+    }
+    next(error);
   }
-
-  res.json(post);
 };
 
-const createPost = (req, res) => {
-  const { title, content, author } = req.body;
+const createPost = async (req, res, next) => {
+  try {
+    const { title, content, author, tags } = req.body;
 
-  const newPost = {
-    id: store.nextId++,
-    title: title.trim(),
-    content: content.trim(),
-    author: author.trim(),
-    createdAt: new Date().toISOString(),
-    likes: 0,
-  };
+    const post = new Post({
+      title: typeof title === "string" ? title.trim() : title,
+      content: typeof content === "string" ? content.trim() : content,
+      author: typeof author === "string" ? author.trim() : author,
+      tags,
+    });
 
-  store.posts.push(newPost);
-  res.status(201).json(newPost);
+    await post.save();
+    res.status(201).json(post);
+  } catch (error) {
+    if (error.name === "ValidationError") {
+      const messages = Object.values(error.errors).map((err) => err.message);
+      return res.status(400).json({ errors: messages });
+    }
+    next(error);
+  }
 };
 
-const updatePost = (req, res) => {
-  const id = parseInt(req.params.id, 10);
-  const postIndex = store.posts.findIndex((p) => p.id === id);
+const updatePost = async (req, res, next) => {
+  try {
+    const { title, content, tags } = req.body;
+    const updates = {};
 
-  if (postIndex === -1) {
-    return res.status(404).json({ error: "Post not found" });
+    if (typeof title === "string" && title.trim()) {
+      updates.title = title.trim();
+    }
+    if (typeof content === "string" && content.trim()) {
+      updates.content = content.trim();
+    }
+    if (tags !== undefined) {
+      updates.tags = tags;
+    }
+
+    const post = await Post.findByIdAndUpdate(req.params.id, updates, {
+      new: true,
+      runValidators: true,
+    });
+
+    if (!post) {
+      return res.status(404).json({ error: "Post not found" });
+    }
+
+    res.json(post);
+  } catch (error) {
+    if (error.name === "CastError") {
+      return res.status(400).json({ error: "Invalid post ID" });
+    }
+    if (error.name === "ValidationError") {
+      const messages = Object.values(error.errors).map((err) => err.message);
+      return res.status(400).json({ errors: messages });
+    }
+    next(error);
   }
-
-  const { title, content } = req.body;
-
-  store.posts[postIndex] = {
-    ...store.posts[postIndex],
-    title:
-      typeof title === "string" && title.trim()
-        ? title.trim()
-        : store.posts[postIndex].title,
-    content:
-      typeof content === "string" && content.trim()
-        ? content.trim()
-        : store.posts[postIndex].content,
-    updatedAt: new Date().toISOString(),
-  };
-
-  res.json(store.posts[postIndex]);
 };
 
-const deletePost = (req, res) => {
-  const id = parseInt(req.params.id, 10);
-  const postIndex = store.posts.findIndex((p) => p.id === id);
+const deletePost = async (req, res, next) => {
+  try {
+    const post = await Post.findByIdAndDelete(req.params.id);
 
-  if (postIndex === -1) {
-    return res.status(404).json({ error: "Post not found" });
+    if (!post) {
+      return res.status(404).json({ error: "Post not found" });
+    }
+
+    res.status(204).send();
+  } catch (error) {
+    if (error.name === "CastError") {
+      return res.status(400).json({ error: "Invalid post ID" });
+    }
+    next(error);
   }
-
-  store.posts.splice(postIndex, 1);
-  res.status(204).send();
 };
 
-const likePost = (req, res) => {
-  const id = parseInt(req.params.id, 10);
-  const post = store.posts.find((p) => p.id === id);
+const likePost = async (req, res, next) => {
+  try {
+    const post = await Post.findById(req.params.id);
 
-  if (!post) {
-    return res.status(404).json({ error: "Post not found" });
+    if (!post) {
+      return res.status(404).json({ error: "Post not found" });
+    }
+
+    await post.like();
+    res.json(post);
+  } catch (error) {
+    if (error.name === "CastError") {
+      return res.status(400).json({ error: "Invalid post ID" });
+    }
+    next(error);
   }
-
-  post.likes++;
-  res.json(post);
 };
 
 module.exports = {
