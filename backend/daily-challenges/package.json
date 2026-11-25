@@ -1,0 +1,19 @@
+{
+  "name": "communityhub-daily-challenges",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "day1": "node day-1-mongodb/server.js",
+    "day2": "node day-2-registration/server.js",
+    "day3": "node day-3-protected-routes/server.js",
+    "day4": "node day-4-user-profile/server.js",
+    "day5": "node day-5-authorization/server.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "jsonwebtoken": "^9.0.3",
+    "mongoose": "^8.9.5"
+  }
+}
