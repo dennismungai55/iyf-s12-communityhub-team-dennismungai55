@@ -41,6 +41,17 @@ const postSchema = new mongoose.Schema(
 // Add index for searching
 postSchema.index({ title: "text", content: "text" });
 
+// Virtual populate for comments
+postSchema.virtual("commentList", {
+  ref: "Comment",
+  localField: "_id",
+  foreignField: "post",
+});
+
+// Enable virtuals in JSON and object output
+postSchema.set("toJSON", { virtuals: true });
+postSchema.set("toObject", { virtuals: true });
+
 // Instance method
 postSchema.methods.like = function () {
   this.likes++;
