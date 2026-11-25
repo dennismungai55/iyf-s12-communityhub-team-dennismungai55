@@ -1,5 +1,8 @@
 const User = require("../models/User");
 const jwt = require("jsonwebtoken");
+const { sanitizeText } = require("../utils/sanitize");
+
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const generateToken = (userId) => {
   return jwt.sign({ id: userId }, process.env.JWT_SECRET, {
@@ -11,9 +14,37 @@ const generateToken = (userId) => {
 const register = async (req, res, next) => {
   try {
     const { username, email, password } = req.body;
+    const errors = [];
+
+    if (
+      !username ||
+      typeof username !== "string" ||
+      username.trim().length < 3
+    ) {
+      errors.push("Username is required and must be at least 3 characters");
+    }
+
+    if (
+      !email ||
+      typeof email !== "string" ||
+      !EMAIL_REGEX.test(email.trim())
+    ) {
+      errors.push("A valid email address is required");
+    }
+
+    if (!password || typeof password !== "string" || password.length < 6) {
+      errors.push("Password is required and must be at least 6 characters");
+    }
+
+    if (errors.length > 0) {
+      return res.status(400).json({ errors });
+    }
+
+    const normalizedUsername = sanitizeText(username);
+    const normalizedEmail = email.trim().toLowerCase();
 
     const existingUser = await User.findOne({
-      $or: [{ email: email?.toLowerCase() }, { username: username?.trim() }],
+      $or: [{ email: normalizedEmail }, { username: normalizedUsername }],
     });
 
     if (existingUser) {
@@ -23,8 +54,8 @@ const register = async (req, res, next) => {
     }
 
     const user = new User({
-      username,
-      email,
+      username: normalizedUsername,
+      email: normalizedEmail,
       password,
     });
 
@@ -56,23 +87,25 @@ const login = async (req, res, next) => {
   try {
     const { email, password } = req.body;
 
-    if (!email || !password) {
+    if (
+      !email ||
+      typeof email !== "string" ||
+      !EMAIL_REGEX.test(email.trim()) ||
+      !password ||
+      typeof password !== "string"
+    ) {
       return res.status(400).json({
-        error: "Please provide email and password",
+        error: "Please provide a valid email and password",
       });
     }
 
-    const user = await User.findOne({ email: email.toLowerCase() }).select(
-      "+password",
-    );
+    const user = await User.findOne({
+      email: email.trim().toLowerCase(),
+    }).select("+password");
 
-    if (!user) {
-      return res.status(401).json({ error: "Invalid credentials" });
-    }
+    const isMatch = user ? await user.comparePassword(password) : false;
 
-    const isMatch = await user.comparePassword(password);
-
-    if (!isMatch) {
+    if (!user || !isMatch) {
       return res.status(401).json({ error: "Invalid credentials" });
     }
 
