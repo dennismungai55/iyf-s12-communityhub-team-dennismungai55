@@ -15,7 +15,8 @@ const postSchema = new mongoose.Schema(
       minlength: [10, "Content must be at least 10 characters"],
     },
     author: {
-      type: String,
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
       required: [true, "Author is required"],
     },
     likes: {
@@ -58,9 +59,9 @@ postSchema.methods.like = function () {
   return this.save();
 };
 
-// Static method
-postSchema.statics.findByAuthor = function (author) {
-  return this.find({ author: new RegExp(author, "i") });
+// Static method: find posts by user ObjectId or populated/queried user IDs
+postSchema.statics.findByAuthor = function (authorId) {
+  return this.find({ author: authorId });
 };
 
 module.exports = mongoose.model("Post", postSchema);

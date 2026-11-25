@@ -1,4 +1,6 @@
+const mongoose = require("mongoose");
 const Post = require("../models/Post");
+const User = require("../models/User");
 
 const getAllPosts = async (req, res, next) => {
   try {
@@ -6,7 +8,15 @@ const getAllPosts = async (req, res, next) => {
     const query = {};
 
     if (author) {
-      query.author = new RegExp(author, "i");
+      if (mongoose.Types.ObjectId.isValid(author)) {
+        query.author = author;
+      } else {
+        const matchingUsers = await User.find(
+          { username: new RegExp(author, "i") },
+          "_id",
+        );
+        query.author = { $in: matchingUsers.map((u) => u._id) };
+      }
     }
 
     if (search) {
@@ -25,7 +35,11 @@ const getAllPosts = async (req, res, next) => {
     const skip = (pageNum - 1) * limitNum;
 
     const [posts, total] = await Promise.all([
-      Post.find(query).sort(sortOption).skip(skip).limit(limitNum),
+      Post.find(query)
+        .populate("author", "username email role")
+        .sort(sortOption)
+        .skip(skip)
+        .limit(limitNum),
       Post.countDocuments(query),
     ]);
 
@@ -45,7 +59,10 @@ const getAllPosts = async (req, res, next) => {
 
 const getPostById = async (req, res, next) => {
   try {
-    const post = await Post.findById(req.params.id);
+    const post = await Post.findById(req.params.id).populate(
+      "author",
+      "username email role",
+    );
 
     if (!post) {
       return res.status(404).json({ error: "Post not found" });
@@ -62,16 +79,17 @@ const getPostById = async (req, res, next) => {
 
 const createPost = async (req, res, next) => {
   try {
-    const { title, content, author, tags } = req.body;
+    const { title, content, tags } = req.body;
 
     const post = new Post({
       title: typeof title === "string" ? title.trim() : title,
       content: typeof content === "string" ? content.trim() : content,
-      author: typeof author === "string" ? author.trim() : author,
+      author: req.user._id,
       tags,
     });
 
     await post.save();
+    await post.populate("author", "username email role");
     res.status(201).json(post);
   } catch (error) {
     if (error.name === "ValidationError") {
@@ -84,28 +102,35 @@ const createPost = async (req, res, next) => {
 
 const updatePost = async (req, res, next) => {
   try {
-    const { title, content, tags } = req.body;
-    const updates = {};
-
-    if (typeof title === "string" && title.trim()) {
-      updates.title = title.trim();
-    }
-    if (typeof content === "string" && content.trim()) {
-      updates.content = content.trim();
-    }
-    if (tags !== undefined) {
-      updates.tags = tags;
-    }
-
-    const post = await Post.findByIdAndUpdate(req.params.id, updates, {
-      new: true,
-      runValidators: true,
-    });
+    const post = await Post.findById(req.params.id);
 
     if (!post) {
       return res.status(404).json({ error: "Post not found" });
     }
 
+    const isOwner = post.author.toString() === req.user._id.toString();
+    const isAdmin = req.user.role === "admin";
+
+    if (!isOwner && !isAdmin) {
+      return res.status(403).json({
+        error: "You can only edit your own posts",
+      });
+    }
+
+    const { title, content, tags } = req.body;
+
+    if (typeof title === "string" && title.trim()) {
+      post.title = title.trim();
+    }
+    if (typeof content === "string" && content.trim()) {
+      post.content = content.trim();
+    }
+    if (tags !== undefined) {
+      post.tags = tags;
+    }
+
+    await post.save();
+    await post.populate("author", "username email role");
     res.json(post);
   } catch (error) {
     if (error.name === "CastError") {
@@ -120,6 +145,33 @@ const updatePost = async (req, res, next) => {
 };
 
 const deletePost = async (req, res, next) => {
+  try {
+    const post = await Post.findById(req.params.id);
+
+    if (!post) {
+      return res.status(404).json({ error: "Post not found" });
+    }
+
+    const isOwner = post.author.toString() === req.user._id.toString();
+    const isAdmin = req.user.role === "admin";
+
+    if (!isOwner && !isAdmin) {
+      return res.status(403).json({
+        error: "You can only delete your own posts",
+      });
+    }
+
+    await post.deleteOne();
+    res.status(204).send();
+  } catch (error) {
+    if (error.name === "CastError") {
+      return res.status(400).json({ error: "Invalid post ID" });
+    }
+    next(error);
+  }
+};
+
+const forceDelete = async (req, res, next) => {
   try {
     const post = await Post.findByIdAndDelete(req.params.id);
 
@@ -145,6 +197,7 @@ const likePost = async (req, res, next) => {
     }
 
     await post.like();
+    await post.populate("author", "username email role");
     res.json(post);
   } catch (error) {
     if (error.name === "CastError") {
@@ -160,5 +213,6 @@ module.exports = {
   createPost,
   updatePost,
   deletePost,
+  forceDelete,
   likePost,
 };
