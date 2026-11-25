@@ -1,10 +1,10 @@
 // ============================================
-// LESSON 19 — CLASS EXERCISE
+// LESSON 19 - CLASS EXERCISE
 // CommunityHub posts API, read-only: GET endpoints, params, query strings.
-// Week 10 · Tasks 19.3 and 19.4 (GET half) · Daily challenge Day 3 (bonus step)
+// Week 10 - Tasks 19.3 and 19.4 (GET half) - Daily challenge Day 3 (bonus step)
 //
-// Lives in:  backend/exercises/{username}/posts-api.js   ({username} = your GitHub username)
-// Move this file there first. Run from backend/:   node --watch exercises/{username}/posts-api.js
+// Lives in:  backend/exercises/Samcodex-405/posts-api.js
+// Run from backend/:   node --watch exercises/Samcodex-405/posts-api.js
 // Test with:           posts-api.http (VS Code REST Client), Thunder Client, Postman or curl
 // ============================================
 
@@ -13,7 +13,7 @@ const express = require('express');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// In-memory data. Restart the server and every change is gone (Lesson 21 fixes that).
+// In-memory data. Restart the server and every change is gone.
 const posts = [
   {
     id: 1,
@@ -49,7 +49,7 @@ const posts = [
   },
 ];
 
-// STEP 1 — GIVEN. Text and JSON responses. Run the file, open both URLs in the browser.
+// STEP 1 - Text and JSON responses
 app.get('/', (req, res) => {
   res.send('Welcome to CommunityHub API');
 });
@@ -58,46 +58,78 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', timestamp: new Date().toISOString() });
 });
 
-// STEP 2 — List all posts.
-// TODO(class): GET /api/posts responds with { posts: [...] }.
-//   Shape it as an object, not a bare array — STEP 5 adds a `pagination` key beside it.
+// STEP 2 - List all posts
+// STEP 4 - filtered, searched and sorted by the query string
+// STEP 5 - and paginated
 app.get('/api/posts', (req, res) => {
-  // STEP 4 — Filter, search and sort with the query string.
-  // TODO(class): read author, search and sort from req.query (sort defaults to 'newest').
-  // TODO(class): copy the array first:  let result = [...posts];
-  //   Why? .sort() changes the array it is called on. Sort `posts` and you reorder the "database".
-  // TODO(class): ?author=amina      -> exact author, case-insensitive
-  // TODO(class): ?search=express    -> title contains the word, case-insensitive
-  // TODO(class): ?sort=newest | oldest | popular  (popular = most likes first)
-  //   Anything else -> 400 { error: 'sort must be newest, oldest or popular' }
+  const { author, search, sort = 'newest' } = req.query;
 
-  // STEP 5 (bonus, Day 3) — Pagination: ?page=2&limit=2
-  // TODO(class): query values are STRINGS. Convert with Number(), default page 1, limit 10.
-  //   Not a positive whole number -> 400.
-  //   Respond { posts: <that page>, pagination: { page, limit, total, pages } }
+  // Copy first. sort() changes the array it is called on,
+  // so sorting `posts` itself would reorder the "database".
+  let result = [...posts];
 
-  res.json({ posts }); // replace as you go
+  // ?author=amina
+  if (author) {
+    result = result.filter((p) => p.author.toLowerCase() === author.toLowerCase());
+  }
+
+  // ?search=express
+  if (search) {
+    const term = search.toLowerCase();
+    result = result.filter((p) => p.title.toLowerCase().includes(term));
+  }
+
+  // ?sort=newest | oldest | popular
+  if (sort === 'newest') {
+    result.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  } else if (sort === 'oldest') {
+    result.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+  } else if (sort === 'popular') {
+    result.sort((a, b) => b.likes - a.likes);
+  } else {
+    return res.status(400).json({ error: 'sort must be newest, oldest or popular' });
+  }
+
+  // ?page=2&limit=2 (query values are always text, so convert them)
+  const page = Number(req.query.page ?? 1);
+  const limit = Number(req.query.limit ?? 10);
+  if (!Number.isInteger(page) || page < 1 || !Number.isInteger(limit) || limit < 1) {
+    return res.status(400).json({ error: 'page and limit must be positive whole numbers' });
+  }
+
+  const start = (page - 1) * limit;
+  res.json({
+    posts: result.slice(start, start + limit),
+    pagination: {
+      page,
+      limit,
+      total: result.length,
+      pages: Math.ceil(result.length / limit),
+    },
+  });
 });
 
-// STEP 3 — One post by id.
-// TODO(class): GET /api/posts/:id
-//   - req.params.id is a STRING. Convert with Number() (not parseInt: parseInt('2abc') is 2).
-//   - Not a whole number  -> 400 { error: 'Post id must be a whole number' }
-//   - No post with that id -> 404 { error: 'Post not found' }
-//   - Found               -> 200 with the post
-//   Remember `return` before an early res.status(...).json(...), or Express tries to answer twice.
+// STEP 3 - One post by id
+app.get('/api/posts/:id', (req, res) => {
+  // Params are text too. Number('abc') is NaN, but parseInt('2abc') would quietly be 2.
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id)) {
+    return res.status(400).json({ error: 'Post id must be a whole number' });
+  }
 
-// STEP 6 — 404 for every unmatched route.
-// TODO(class): app.use((req, res) => ...) responding 404 { error: 'Route not found' }.
-//   It must be the LAST thing before app.listen — routes are checked top to bottom.
+  const post = posts.find((p) => p.id === id);
+  if (!post) {
+    return res.status(404).json({ error: 'Post not found' });
+  }
+
+  res.json(post);
+});
+
+// STEP 6 - 404 for every unmatched route. Must stay last, after all routes.
+app.use((req, res) => {
+  res.status(404).json({ error: 'Route not found' });
+});
 
 app.listen(PORT, () => {
   console.log(`Posts API running at http://localhost:${PORT}`);
 });
-
-// STEP 7 — Commit (from the team repo root, on your own branch):
-//   git checkout -b exercises/{username}-week10
-//   git add backend/exercises/{username}/
-//   git commit -m "Add: Lesson 19 read-only posts API"
-//   git push -u origin exercises/{username}-week10
-//   Open a PR, request a teammate's review. Do not merge your own.
