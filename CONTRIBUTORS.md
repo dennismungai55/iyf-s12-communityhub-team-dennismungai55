@@ -14,8 +14,36 @@ This document recognizes the individuals contributing to the development of **Co
 Each team member is responsible for keeping their contribution record up to date. Updates should be submitted through a Pull Request before the respective weekly deadline.
 
 ### 1. Dennis Mungai
-- **Pull Requests Opened:**
+- **Pull Requests Opened:**  - Week 10:
+    - [#24](https://github.com/dennismungai55/iyf-s12-communityhub-team-dennismungai55/pull/24): 
+    - [#23](https://github.com/dennismungai55/iyf-s12-communityhub-team-dennismungai55/pull/23): 
+    - [#22](https://github.com/dennismungai55/iyf-s12-communityhub-team-dennismungai55/pull/22): 
+    - [#21](https://github.com/dennismungai55/iyf-s12-communityhub-team-dennismungai55/pull/21): 
+    - [#20](https://github.com/dennismungai55/iyf-s12-communityhub-team-dennismungai55/pull/20): 
+    - [#19](https://github.com/dennismungai55/iyf-s12-communityhub-team-dennismungai55/pull/19): 
+    - [#GITIGNORE_PR](https://github.com/dennismungai55/iyf-s12-communityhub-team-dennismungai55/pull/GITIGNORE_PR): 
+
+    - [#18](https://github.com/dennismungai55/iyf-s12-communityhub-team-dennismungai55/pull/18): 
+    - [#17](https://github.com/dennismungai55/iyf-s12-communityhub-team-dennismungai55/pull/17): 
+    - [#16](https://github.com/dennismungai55/iyf-s12-communityhub-team-dennismungai55/pull/16): 
+    - [#15](https://github.com/dennismungai55/iyf-s12-communityhub-team-dennismungai55/pull/15): 
+    - [#14](https://github.com/dennismungai55/iyf-s12-communityhub-team-dennismungai55/pull/14): 
+    - [#13](https://github.com/dennismungai55/iyf-s12-communityhub-team-dennismungai55/pull/13): 
+
+   
+    - [#12](https://github.com/dennismungai55/iyf-s12-communityhub-team-dennismungai55/pull/12): 
+    - [#11](https://github.com/dennismungai55/iyf-s12-communityhub-team-dennismungai55/pull/11): 
+    - [#10](https://github.com/dennismungai55/iyf-s12-communityhub-team-dennismungai55/pull/10): 
+
+- 
 - **Pull Requests Reviewed:**
+-      
+    - [#23](https://github.com/dennismungai55/iyf-s12-communityhub-team-dennismungai55/pull/23): 
+    - [#22](https://github.com/dennismungai55/iyf-s12-communityhub-team-dennismungai55/pull/22): 
+    - [#21](https://github.com/dennismungai55/iyf-s12-communityhub-team-dennismungai55/pull/21): 
+    - [#20](https://github.com/dennismungai55/iyf-s12-communityhub-team-dennismungai55/pull/20): 
+    - [#19](https://github.com/dennismungai55/iyf-s12-communityhub-team-dennismungai55/pull/19): 
+
 - **Issues Closed:**
 
 ### 2. Shaniz Ann Mumbua
