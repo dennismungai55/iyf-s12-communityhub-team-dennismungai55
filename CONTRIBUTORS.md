@@ -28,7 +28,12 @@ Each team member is responsible for keeping their contribution record up to date
     - [#29](https://github.com/dennismungai55/iyf-s12-communityhub-team-dennismungai55/pull/29): Day 4, logger middleware with response time
     - [#30](https://github.com/dennismungai55/iyf-s12-communityhub-team-dennismungai55/pull/30): Day 5, comments endpoint (GET, POST, DELETE)
     - [#GITIGNORE_PR](https://github.com/dennismungai55/iyf-s12-communityhub-team-dennismungai55/pull/GITIGNORE_PR): `backend/.gitignore` for `.env` and `node_modules/`
+
+    
 - **Pull Requests Reviewed:**
+  - [#23](https://github.com/dennismungai55/iyf-s12-communityhub-team-dennismungai55/pull/23): Scaffold backend server and MongoDB database configuration (review comments)
+  - [#24](https://github.com/dennismungai55/iyf-s12-communityhub-team-dennismungai55/pull/24): Setup/backend scaffold (review comments on the daily-challenges files)
+
 - **Issues Closed:**
 
 ---
